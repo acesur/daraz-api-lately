@@ -4,7 +4,10 @@ const {mongoose} = require('./database/mongoosedb');
 const bodyParser = require('body-parser');
 const bcrypt=require('bcryptjs');
 const jwt = require('jsonwebtoken');
+
+//import model
 const {User} = require('./model/user.model');
+const {Product}=require('./model/product.model');
 //define port number
 const port = 3000;
 //more length of salt means more time require to decrypt make stronger hashing
@@ -25,7 +28,6 @@ app.use(function (req,res,next) {
 });
 
 //user sign up
-
 app.post('/user/signup', (req, res, next) => {
     let password = req.body.password;
     bcrypt.hash(password, saltRounds,(err, hash)=> {
@@ -50,6 +52,7 @@ app.post('/user/signup', (req, res, next) => {
     });
 });
 
+//get all registered user
 app.get('/user/list',(req,res)=>{
     User.find({
 
@@ -58,7 +61,7 @@ app.get('/user/list',(req,res)=>{
     }).catch((e)=>{
         res.send(e);
     })
-})
+});
 
 //user login
 app.post('/user/login',(req,res)=>{
@@ -70,8 +73,26 @@ app.post('/user/login',(req,res)=>{
     }).catch((err)=>{
         res.status(400).send(err);
     });
-})
+});
+
+//post products or items
+app.post('/products',(req,res)=>{
+    let newProduct = new Product(req.body);
+    newProduct.save().then((productDoc)=>{
+        res.send(productDoc);
+    });
+});
+
+//get product list
+app.get('/product/list',(req,res)=>{
+    Product.find({}).then((productList)=>{
+        res.send(productList);
+    }).catch((e)=>{
+        res.send(e);
+    })
+});
 
 app.listen(port,()=>{
     console.log(`server is listening in port ${port}`);
 });
+
