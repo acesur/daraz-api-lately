@@ -9,10 +9,12 @@ const UserSchema=new mongoose.Schema({
         type:Number,
         required:true,
         minlength:10,
+        index:true,
+        unique:true,
         trim:true
     },
     smsCode:{
-        type:String,
+        type:Number,
         required:true,
         minlength:4,
         trim:true
@@ -25,6 +27,8 @@ const UserSchema=new mongoose.Schema({
    },
     email:{
        type:String,
+        unique:true,
+        index: true,
         required:true,
         trim:true
     },
@@ -33,18 +37,11 @@ const UserSchema=new mongoose.Schema({
         required: true,
         minLength:5,
         trim: true
+    },
+    image:{
+        type:String
     }
 });
-
-UserSchema.statics.hashPassword = function(password, callback) {
-    bcrypt.genSalt(10,(err, salt)=> {
-        if (err)
-            return callback(err);
-        bcrypt.hash(password, salt,(err, hash)=> {
-            return callback(err, hash);
-        });
-    });
-};
 
 UserSchema.statics.findByCredentials = function (mobileNumber, password) {
     let User = this;

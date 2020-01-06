@@ -2,13 +2,21 @@ const express = require('express');
 const app = express();
 const {mongoose} = require('./database/mongoosedb');
 const bodyParser = require('body-parser');
+const bcrypt=require('bcryptjs');
+const jwt = require('jsonwebtoken');
 const {User} = require('./model/user.model');
+//define port number
 const port = 3000;
+//more length of salt means more time require to decrypt make stronger hashing
+const saltRounds=10;
+//anything could be my secrete
+const jwtSecret = "0123456789abcdefghijklmnopqrstuvwxyz";
 
 //Middleware functions
 app.use(bodyParser.json());
+app.use(express.urlencoded({extended:true}));
 
-//cros headers middleware
+//cros headers middleware to allow access to cross origin resource sharing
 app.use(function (req,res,next) {
     res.header("Access-Control-Allow-Origin", "*");
     res.header("Access-Control-Allow-Methods","GET,POST,HEAD,OPTIONS,PUT,PATCH,DELETE");
@@ -17,18 +25,29 @@ app.use(function (req,res,next) {
 });
 
 //user sign up
-app.post('/user', (req, res) => {
-    // User sign up
-    let body = req.body;
-    let password = req.body.password;
-    User.hashPassword(password);
-    let newUser = new User(body);
 
-    newUser.save().then(() => {
-        res.send("User created successfully");
-    }).catch((e) => {
-        res.status(400).send(e);
-    })
+app.post('/user/signup', (req, res, next) => {
+    let password = req.body.password;
+    bcrypt.hash(password, saltRounds,(err, hash)=> {
+        if (err) {
+            let err =  new Error('Could not hash!');
+            err.status = 500;
+            return next(err);
+        }
+        User.create({
+            mobileNumber: req.body.mobileNumber,
+            smsCode: req.body.smsCode,
+            fullName: req.body.fullName,
+            email:req.body.email,
+            password: hash,
+            image: req.body.image
+        }).then((user) => {
+            let token = jwt.sign({ _id: user._id },jwtSecret);
+            res.json({ status: "Signup success!", token: token });
+        }).catch((err)=>{
+            res.send(err);
+        });
+    });
 });
 
 app.get('/user/list',(req,res)=>{
