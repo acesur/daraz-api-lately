@@ -129,7 +129,7 @@ const upload = multer({
     fileFilter: imageFileFilter
 });
 //get single products or items by id
-app.post('/product/:productId/image',upload.single('imageFile'),(req, res) => {
+app.patch('/product/:productId/image',upload.single('imageFile'),(req, res) => {
     // We want to upload a image in a product specified by productId
     Product.findOne({
         _id: req.params.productId
@@ -142,18 +142,20 @@ app.post('/product/:productId/image',upload.single('imageFile'),(req, res) => {
         return false;
     }).then((canUploadImage) => {
         if (canUploadImage) {
-            let productImage = new Product({
-                image: req.body.image,
-                _id: req.params.productId
-            });
-            productImage.save().then((newImage) => {
-                res.send(newImage);
+            Product.findOneAndUpdate({
+                    _id: req.params.productId,
+                    image: req.body.image
+                }, {
+                    $set: req.body
+                }
+            ).then(() => {
+                res.send({ message: 'Image uploaded Successfully' })
             })
         } else {
             res.sendStatus(404);
         }
     })
-})
+});
 
 //get verify user details
 app.get('/user/me', User.verifyUser, (req, res, next) => {
