@@ -1,7 +1,7 @@
 const mongoose=require('mongoose');
-const _ = require('lodash');
 const bcrypt = require('bcryptjs');
-
+const jwt = require('jsonwebtoken');
+const jwtSecret = "0123456789abcdefghijklmnopqrstuvwxyz";
 const UserSchema=new mongoose.Schema({
     mobileNumber:{
         type:Number,
@@ -41,23 +41,27 @@ const UserSchema=new mongoose.Schema({
     }
 });
 
-UserSchema.statics.findByCredentials = function (mobileNumber, password) {
-    let User = this;
-    return User.findOne({ mobileNumber }).then((user) => {
-        if (!user) return Promise.reject();
-
-        return new Promise((resolve, reject) => {
-            bcrypt.compare(password, user.password, (err, res) => {
-                if (res) {
-                    resolve(user);
-                }
-                else {
-                    reject();
-                }
-            })
+//user authentication
+UserSchema.statics.verifyUser = (req, res, next) => {
+    let authHeader = req.headers.authorization;
+    if (!authHeader) {
+        let err = new Error('Bearer token is not set');
+        err.status = 401;
+        return next(err);
+    }
+    let token = authHeader.split(' ')[1];
+    let data;
+    try {
+        data = jwt.verify(token, jwtSecret);
+    } catch (err) {
+        throw new Error('Token could not be verified!');
+    }
+    User.findById(data._id)
+        .then((user) => {
+            req.user = user;
+            next();
         })
-    })
-};
+}
 
 const User=mongoose.model('User',UserSchema);
 module.exports={User};

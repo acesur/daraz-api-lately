@@ -30,7 +30,7 @@ app.use(function (req,res,next) {
 //user sign up
 app.post('/user/signup', (req, res, next) => {
     let password = req.body.password;
-    bcrypt.hash(password, saltRounds,(err, hash)=> {
+    bcrypt.hash(password, saltRounds, (err, hash)=> {
         if (err) {
             let err =  new Error('Could not hash!');
             err.status = 500;
@@ -40,19 +40,17 @@ app.post('/user/signup', (req, res, next) => {
             mobileNumber: req.body.mobileNumber,
             smsCode: req.body.smsCode,
             fullName: req.body.fullName,
-            email:req.body.email,
-            password: hash,
+            email: req.body.email,
+            password:hash,
             image: req.body.image
         }).then((user) => {
-            let token = jwt.sign({ _id: user._id },jwtSecret);
+            let token = jwt.sign({ _id: user._id }, jwtSecret);
             res.json({ status: "Signup success!", token: token });
-        }).catch((err)=>{
-            res.send(err);
-        });
+        }).catch(next);
     });
 });
 
-//get all registered user
+//get all registered user or check how many user are there in database
 app.get('/user/list',(req,res)=>{
     User.find({
 
@@ -64,15 +62,27 @@ app.get('/user/list',(req,res)=>{
 });
 
 //user login
-app.post('/user/login',(req,res)=>{
-    let mobileNumber=req.body.mobileNumber;
-    let password=req.body.password;
-
-    User.findByCredentials(mobileNumber,password).then(()=>{
-        res.send("user login successfully");
-    }).catch((err)=>{
-        res.status(400).send(err);
-    });
+app.post('/user/login', (req, res, next) => {
+    User.findOne({ mobileNumber: req.body.mobileNumber })
+        .then((user) => {
+            if (user == null) {
+                let err = new Error('User not exist');
+                err.status = 401;
+                return next(err);
+            } else {
+                //inbuilt method of bcrypt to compare plain password with hash password
+                bcrypt.compare(req.body.password, user.password)
+                    .then((isCorrectPassowrd) => {
+                        if (!isCorrectPassowrd) {
+                            let err = new Error('Wrong Password');
+                            err.status = 401;
+                            return next(err);
+                        }
+                        let token = jwt.sign({ _id: user._id }, jwtSecret);
+                        res.json({ status: 'Login Successfully', token: token });
+                    }).catch(next);
+            }
+        }).catch(next);
 });
 
 //post products or items
@@ -83,7 +93,7 @@ app.post('/products',(req,res)=>{
     });
 });
 
-//get product list
+//get all the products or items list
 app.get('/product/list',(req,res)=>{
     Product.find({}).then((productList)=>{
         res.send(productList);
@@ -92,6 +102,7 @@ app.get('/product/list',(req,res)=>{
     })
 });
 
+//start the server on specified port
 app.listen(port,()=>{
     console.log(`server is listening in port ${port}`);
 });
