@@ -1,9 +1,16 @@
 const express = require('express');
 const app = express();
 const {mongoose} = require('./database/mongoosedb');
+//used to convert data into json format
 const bodyParser = require('body-parser');
+//used for bcrypt or encrypt plain text
 const bcrypt=require('bcryptjs');
 const jwt = require('jsonwebtoken');
+//used for file uploading
+const multer = require('multer');
+//file system
+const fs= require('fs');
+const path = require("path");
 
 //import model
 const {User} = require('./model/user.model');
@@ -100,6 +107,58 @@ app.get('/product/list',(req,res)=>{
     }).catch((e)=>{
         res.send(e);
     })
+});
+
+//path to store image
+const storage = multer.diskStorage({
+    destination: "./upload/products",
+    filename: (req, file, callback) => {
+        let ext = path.extname(file.originalname);
+        callback(null, `${file.fieldname}-${Date.now()}${ext}`);
+    }
+});
+//check file types
+const imageFileFilter = (req, file, cb) => {
+    if (!file.originalname.match(/\.(jpg|jpeg|png|gif)$/)) {
+        return cb(new Error("You can upload only image files!"), false);
+    }
+    cb(null, true);
+};
+const upload = multer({
+    storage: storage,
+    fileFilter: imageFileFilter
+});
+//get single products or items by id
+app.post('/product/:productId/image',upload.single('imageFile'),(req, res) => {
+    // We want to upload a image in a product specified by productId
+    Product.findOne({
+        _id: req.params.productId
+    }).then((product) => {
+        if (product) {
+            // product object with the specified conditions was found
+            return true;
+        }
+        // else - the product object is undefined
+        return false;
+    }).then((canUploadImage) => {
+        if (canUploadImage) {
+            let productImage = new Product({
+                image: req.body.image,
+                _id: req.params.productId
+            });
+            productImage.save().then((newImage) => {
+                res.send(newImage);
+            })
+        } else {
+            res.sendStatus(404);
+        }
+    })
+})
+
+//get verify user details
+app.get('/user/me', User.verifyUser, (req, res, next) => {
+    res.json({ _id: req.user._id, mobileNumber: req.user.mobileNumber, fullName: req.user.fullName, email: req.user.email,
+        image: req.user.image });
 });
 
 //start the server on specified port
