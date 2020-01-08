@@ -8,8 +8,7 @@ const bcrypt=require('bcryptjs');
 const jwt = require('jsonwebtoken');
 //used for file uploading
 const multer = require('multer');
-//file system
-const fs= require('fs');
+//get path
 const path = require("path");
 
 //import model
@@ -123,7 +122,6 @@ const upload = multer({
 
 //post products or items
 app.post('/save/product',upload.single('productImage'),(req,res)=>{
-    console.log(req.file);
     let newProduct = new Product({
         productName:req.body.productName,
         price:req.body.price,
