@@ -2,7 +2,7 @@ const mongoose=require('mongoose');
 
 
 const ProductSchema = new mongoose.Schema({
-    itemName:{
+    productName:{
         type:String,
         required:true,
         min:3,
@@ -31,13 +31,13 @@ const ProductSchema = new mongoose.Schema({
         minlength:5,
         trim:true
     },
-    service:{
+    services:{
         type:String,
         required:true,
         minlength:5,
         trim:true
     },
-    image:{
+    productImage:{
         type:String
     }
 });

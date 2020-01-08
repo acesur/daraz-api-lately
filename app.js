@@ -92,14 +92,6 @@ app.post('/user/login', (req, res, next) => {
         }).catch(next);
 });
 
-//post products or items
-app.post('/products',(req,res)=>{
-    let newProduct = new Product(req.body);
-    newProduct.save().then((productDoc)=>{
-        res.send(productDoc);
-    });
-});
-
 //get all the products or items list
 app.get('/product/list',(req,res)=>{
     Product.find({}).then((productList)=>{
@@ -128,8 +120,26 @@ const upload = multer({
     storage: storage,
     fileFilter: imageFileFilter
 });
+
+//post products or items
+app.post('/save/product',upload.single('productImage'),(req,res)=>{
+    console.log(req.file);
+    let newProduct = new Product({
+        productName:req.body.productName,
+        price:req.body.price,
+        description:req.body.description,
+        specification:req.body.specification,
+        delivery:req.body.delivery,
+        services:req.body.services,
+        productImage:req.file.path
+    });
+    newProduct.save().then((productDoc)=>{
+        res.send(productDoc);
+    });
+});
+
 //get single products or items by id
-app.patch('/product/:productId/image',upload.single('imageFile'),(req, res) => {
+app.patch('/product/:productId',upload.single('imageFile'),(req, res) => {
     // We want to upload a image in a product specified by productId
     Product.findOne({
         _id: req.params.productId
@@ -143,13 +153,12 @@ app.patch('/product/:productId/image',upload.single('imageFile'),(req, res) => {
     }).then((canUploadImage) => {
         if (canUploadImage) {
             Product.findOneAndUpdate({
-                    _id: req.params.productId,
-                    image: req.body.image
+                    _id: req.params.productId
                 }, {
                     $set: req.body
                 }
             ).then(() => {
-                res.send({ message: 'Image uploaded Successfully' })
+                res.send({ message: 'product updated successfully' })
             })
         } else {
             res.sendStatus(404);
